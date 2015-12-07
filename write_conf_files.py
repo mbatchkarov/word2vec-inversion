@@ -45,7 +45,7 @@ def traditional_classifier_experiments():
 
 
 def taddy_experiments():
-    pretrained = 'wtv_model_cwiki_50perc.pkl'
+    pretrained = 'models/wtv_model_cwiki_50perc.pkl'
     classifier = 'TaddyClassifier'
     for corpus in ['yelp', '20ng']:
         for iters in [1, 10, 50]:

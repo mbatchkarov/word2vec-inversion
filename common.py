@@ -41,6 +41,8 @@ def _get_yelp_reviews_as_dict(label):
     with ZipFile("data/yelp_%s_set.zip" % label, 'r') as zf:
         with zf.open("yelp_%s_set/yelp_%s_set_review.json" % (label, label)) as f:
             for i, line in enumerate(f):
+                if i > 1000:
+                    raise StopIteration
                 rev = json.loads(line.decode())
                 yield {'y': rev['stars'], \
                        'x': [_clean_yelp(s).split() for s in _yelp_sentences(rev['text'])]}

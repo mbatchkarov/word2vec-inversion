@@ -53,7 +53,7 @@ def _run_single(conf_file):
     # cd = RandomizedSearchCV(clf, param_distributions=get_classifier_params_for_grid_search(**conf),
     #                         n_iter=10, n_jobs=4, cv=3, verbose=5)
     cd = GridSearchCV(clf, get_classifier_params_for_grid_search(**conf),
-                      n_jobs=4, cv=5, verbose=2)
+                      n_jobs=5, cv=5, verbose=2)
     cd.fit(Xtr, ytr)
     preds = cd.best_estimator_.predict(Xev)
 
@@ -70,7 +70,9 @@ def _run_single(conf_file):
 
 
 def _run_all():
-    for conf_file in sorted(glob.glob('results/**/conf.txt')):
+    conf_files = sorted(glob.glob('results/**/conf.txt'))
+    logging.info('Running all %d classification experiments', len(conf_files))
+    for conf_file in conf_files:
         _run_single(conf_file)
 
 
@@ -92,4 +94,5 @@ if __name__ == '__main__':
     if parameters.all:
         _run_all()
     else:
+        logging.info('Running a single classification experiment')
         _run_single('results/exp%d/conf.txt' % parameters.id)

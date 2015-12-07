@@ -24,7 +24,7 @@ def _train(X, y, basemodel, taddy__specialised_pkl=None, **kwargs):
         indices = np.where(y == label)[0]
         slist = itemgetter(*indices)(X)
         class_specific_models[i].train(slist, total_examples=len(indices))
-        logging.info('Did %d', i)
+        logging.info('Done with number %d', (i + 1))
 
     with open(taddy__specialised_pkl, 'wb') as outfile:
         logging.info('Dumping to disk')
@@ -53,6 +53,10 @@ def _run_single(conf_file):
     with open(conf_file) as inf:
         conf = json.load(inf)
 
+    if not conf['taddy__specialised_pkl']:
+        logging.info('No need to train class-specific word2vec')
+        return
+
     X, y, _, _ = get_data(**conf)
     if conf['taddy__pretrained_pkl']:
         _train(X, y, _pretrained_model(**conf), **conf)
@@ -61,7 +65,9 @@ def _run_single(conf_file):
 
 
 def _run_all():
-    for conf_file in sorted(glob.glob('results/**/conf.txt')):
+    conf_files = sorted(glob.glob('results/**/conf.txt'))
+    logging.info('Preparing resources for all %d experiments', len(conf_files))
+    for conf_file in conf_files:
         _run_single(conf_file)
 
 
@@ -84,4 +90,5 @@ if __name__ == '__main__':
     if parameters.all:
         _run_all()
     else:
+        logging.info('Preparing resources for a single experiment')
         _run_single('results/exp%d/conf.txt' % parameters.id)
