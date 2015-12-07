@@ -21,27 +21,36 @@ def mkdirs_if_not_exists(dir):
 template = {
     'output_dir': None,
     'corpus': None,
-    'iters': None,
-    'pretrained_pkl': None,
-    'specialised_pkl': None,
+    'taddy__iters': None,
+    'taddy__pretrained_pkl': None,
+    'taddy__specialised_pkl': None,
+    'yelp__three_way': None,
+    'clf__class': None,
 }
 
 if __name__ == '__main__':
     mkdirs_if_not_exists('results')
     i = 1
     for corpus in ['yelp', '20ng']:
-        for iters in [1, 5, 10, 20]:
+        for iters in [1, 5]:
             for pretrained in ['models/wtv_model_cwiki_50perc.pkl', None]:
-                output_dir = os.path.join('results', 'exp%d' % i)
-                mkdirs_if_not_exists(output_dir)
+                for three_way in [True, False, None]:
+                    for classifier in ['MultinomialNB', 'TaddyClassifier']:
+                        if (three_way is not None) and corpus != 'yelp':
+                            continue
 
-                conf = deepcopy(template)
-                conf['output_dir'] = output_dir
-                conf['corpus'] = corpus
-                conf['iters'] = iters
-                conf['pretrained_pkl'] = pretrained
-                conf['specialised_pkl'] = 'models/specialised_wtv_%d.pkl' % i
+                        output_dir = os.path.join('results', 'exp%d' % i)
+                        mkdirs_if_not_exists(output_dir)
 
-                with open(os.path.join(output_dir, 'conf.txt'), 'w') as outf:
-                    json.dump(conf, outf, indent=1)
-                    i += 1
+                        conf = deepcopy(template)
+                        conf['output_dir'] = output_dir
+                        conf['corpus'] = corpus
+                        conf['taddy__iters'] = iters
+                        conf['taddy__pretrained_pkl'] = pretrained
+                        conf['taddy__specialised_pkl'] = 'models/specialised_wtv_%d.pkl' % i
+                        conf['yelp__three_way'] = three_way
+                        conf['clf__class'] = classifier
+
+                        with open(os.path.join(output_dir, 'conf.txt'), 'w') as outf:
+                            json.dump(conf, outf, indent=1)
+                            i += 1

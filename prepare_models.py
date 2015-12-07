@@ -8,38 +8,41 @@ import pickle
 from copy import deepcopy
 
 import numpy as np
-from gensim.models import Word2Vec
 
+from gensim.models import Word2Vec
 from common import get_data
 
 
-def _train(X, y, basemodel, specialised_pkl=None, **kwargs):
-    logging.info('Training specialised models')
-    if not specialised_pkl:
+def _train(X, y, basemodel, taddy__specialised_pkl=None, **kwargs):
+    labels = list(sorted(set(y)))
+    logging.info('Training specialised models for classes %r', labels)
+    if not taddy__specialised_pkl:
         raise ValueError('This needs to be provided yo')
 
-    class_specific_models = [deepcopy(basemodel) for _ in range(5)]
-    for i, label in enumerate(list(sorted(set(y)))):
+    class_specific_models = [deepcopy(basemodel) for _ in range(len(labels))]
+    for i, label in enumerate(labels):
         indices = np.where(y == label)[0]
-        slist = list(itemgetter(*indices)(X))
-        class_specific_models[label].train(slist, total_words=len(slist))
+        slist = itemgetter(*indices)(X)
+        class_specific_models[i].train(slist, total_examples=len(indices))
         logging.info('Did %d', i)
-    with open(specialised_pkl, 'wb') as outfile:
+
+    with open(taddy__specialised_pkl, 'wb') as outfile:
+        logging.info('Dumping to disk')
         pickle.dump(class_specific_models, outfile)
 
 
 def _new_model(data, iters=3, **kwargs):
     # create a w2v learner
     wtv = Word2Vec(workers=multiprocessing.cpu_count(),  # use them cores
-                         iter=iters,  # sweeps of SGD through the data; more is better
-                         min_count=15)
+                   iter=iters,  # sweeps of SGD through the data; more is better
+                   min_count=15)
     wtv.build_vocab(data)
     return wtv
 
 
-def _pretrained_model(iters=3, pretrained_pkl=None, **kwargs):
+def _pretrained_model(iters=3, taddy__pretrained_pkl=None, **kwargs):
     logging.info('Reading pretrained wtv pickle')
-    with open(pretrained_pkl, 'rb') as infile:
+    with open(taddy__pretrained_pkl, 'rb') as infile:
         basemodel = pickle.load(infile)
     basemodel.iter = iters
     return basemodel
@@ -51,14 +54,14 @@ def _run_single(conf_file):
         conf = json.load(inf)
 
     X, y, _, _ = get_data(**conf)
-    if conf['pretrained_pkl']:
+    if conf['taddy__pretrained_pkl']:
         _train(X, y, _pretrained_model(**conf), **conf)
     else:
         _train(X, y, _new_model(X, **conf), **conf)
 
 
 def _run_all():
-    for conf_file in glob.glob('results/**/conf.txt'):
+    for conf_file in sorted(glob.glob('results/**/conf.txt')):
         _run_single(conf_file)
 
 

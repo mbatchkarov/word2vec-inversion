@@ -4,11 +4,18 @@ import json
 import re
 
 import numpy as np
+from sklearn.datasets import fetch_20newsgroups
 
 
-def _get_yelp_reviews_json(label):
-    # cleaner (order matters)
+def _get_yelp_reviews_as_dict(label):
+    """
+    Yield yelp reviews as a dict {x: list of tokenised sentences, y: label}
+    :param label: 'training' or 'test'
+    :return: :raise StopIteration:
+    """
+
     def _clean_yelp(text):
+        # cleaner (order matters)
         contractions = re.compile(r"'|-|\"")
         # all non alphanumeric
         symbols = re.compile(r'(\W+)', re.U)
@@ -36,15 +43,24 @@ def _get_yelp_reviews_json(label):
             for i, line in enumerate(f):
                 rev = json.loads(line.decode())
                 if i > 100:
-                    raise StopIteration # todo remove this
+                    raise StopIteration  # todo remove this
                 yield {'y': rev['stars'], \
                        'x': [_clean_yelp(s).split() for s in _yelp_sentences(rev['text'])]}
 
 
-def _get_yelp_data(three_way=5):
-    def read(setname):
+def _get_yelp_data(three_way=False):
+    """
+    Return yelp data as a tuple of
+        - list of training documents (untokenised, unsegmented)
+        - np.array of training labels
+        - list of test documents
+        - np.array of test documents
+    :rtype : tuple
+    """
+
+    def _read(setname):
         X, y = [], []
-        for doc in _get_yelp_reviews_json(setname):
+        for doc in _get_yelp_reviews_as_dict(setname):
             words = []
             for sent in doc['x']:
                 words.extend(sent)
@@ -53,8 +69,8 @@ def _get_yelp_data(three_way=5):
 
         return X, np.array(y)
 
-    tr_text, ytr = read('training')
-    ev_text, yev = read('test')
+    tr_text, ytr = _read('training')
+    ev_text, yev = _read('test')
     if three_way:
         for y in [ytr, yev]:
             y[y <= 2] = 1
@@ -64,7 +80,11 @@ def _get_yelp_data(three_way=5):
 
 
 def _get_20ng_data():
-    raise NotImplementedError()
+    cats = ['rec.autos', 'rec.motorcycles', 'rec.sport.baseball', 'rec.sport.hockey', 'talk.religion.misc']
+    train = fetch_20newsgroups(data_home='data', subset='train', categories=cats)
+    test = fetch_20newsgroups(data_home='data', subset='test', categories=cats)
+
+    return train.data, train.target, test.data, test.target
 
 
 def get_data(corpus, **kwargs):
