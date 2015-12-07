@@ -28,29 +28,57 @@ template = {
     'clf__class': None,
 }
 
+
+def traditional_classifier_experiments():
+    for corpus in ['yelp', '20ng']:
+        for three_way in [True, False, None]:
+            for classifier in ['MultinomialNB', 'LinearSVC']:
+                if (three_way is not None) and corpus != 'yelp':
+                    continue
+
+                conf = deepcopy(template)
+                conf['corpus'] = corpus
+                conf['yelp__three_way'] = three_way
+                conf['clf__class'] = classifier
+
+                yield conf
+
+
+def taddy_experiments():
+    pretrained = 'wtv_model_cwiki_50perc.pkl'
+    classifier = 'TaddyClassifier'
+    for corpus in ['yelp', '20ng']:
+        for iters in [1, 10, 50]:
+            for three_way in [True, False, None]:
+                if (three_way is not None) and corpus != 'yelp':
+                    continue
+
+                conf = deepcopy(template)
+                conf['corpus'] = corpus
+                conf['taddy__iters'] = iters
+                conf['taddy__pretrained_pkl'] = pretrained
+                conf['taddy__specialised_pkl'] = 'models/specialised_wtv_%d.pkl' % i
+                conf['yelp__three_way'] = three_way
+                conf['clf__class'] = classifier
+
+                yield conf
+
+
+def all_experiments():
+    yield from traditional_classifier_experiments()
+    yield from taddy_experiments()
+
+
+def write_conf(conf, output_dir):
+    mkdirs_if_not_exists(output_dir)
+    with open(os.path.join(output_dir, 'conf.txt'), 'w') as outf:
+        conf['output_dir'] = output_dir
+        json.dump(conf, outf, indent=1)
+
+
 if __name__ == '__main__':
     mkdirs_if_not_exists('results')
-    i = 1
-    for corpus in ['yelp', '20ng']:
-        for iters in [1, 5]:
-            for pretrained in ['models/wtv_model_cwiki_50perc.pkl', None]:
-                for three_way in [True, False, None]:
-                    for classifier in ['MultinomialNB', 'TaddyClassifier']:
-                        if (three_way is not None) and corpus != 'yelp':
-                            continue
 
-                        output_dir = os.path.join('results', 'exp%d' % i)
-                        mkdirs_if_not_exists(output_dir)
-
-                        conf = deepcopy(template)
-                        conf['output_dir'] = output_dir
-                        conf['corpus'] = corpus
-                        conf['taddy__iters'] = iters
-                        conf['taddy__pretrained_pkl'] = pretrained
-                        conf['taddy__specialised_pkl'] = 'models/specialised_wtv_%d.pkl' % i
-                        conf['yelp__three_way'] = three_way
-                        conf['clf__class'] = classifier
-
-                        with open(os.path.join(output_dir, 'conf.txt'), 'w') as outf:
-                            json.dump(conf, outf, indent=1)
-                            i += 1
+    for i, conf in enumerate(all_experiments()):
+        output_dir = os.path.join('results', 'exp%d' % (i + 1))
+        write_conf(conf, output_dir)
