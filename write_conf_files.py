@@ -44,7 +44,8 @@ def traditional_classifier_experiments():
                 yield conf
 
 
-def taddy_experiments():
+def taddy_experiments(first_id):
+    i = first_id
     pretrained = 'models/wtv_model_cwiki_50perc.pkl'
     classifier = 'TaddyClassifier'
     for corpus in ['yelp', '20ng']:
@@ -60,14 +61,15 @@ def taddy_experiments():
                 conf['taddy__specialised_pkl'] = 'models/specialised_wtv_%d.pkl' % i
                 conf['yelp__three_way'] = three_way
                 conf['clf__class'] = classifier
-
+                i += 1
                 yield conf
 
 
 def all_experiments():
-    yield from traditional_classifier_experiments()
-    yield from taddy_experiments()
-
+    experiments = []
+    experiments.extend(traditional_classifier_experiments())
+    experiments.extend(taddy_experiments(len(experiments) + 1))
+    return experiments
 
 def write_conf(conf, output_dir):
     mkdirs_if_not_exists(output_dir)
